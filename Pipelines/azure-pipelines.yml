@@ -1,0 +1,42 @@
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  BuildConfiguration: 'Release'
+  BuildPlatform: 'Any CPU'
+  Solution: 'CreateAndInstallWorkerService.sln'
+  WebSiteName: 'TheBestWorkerService'
+  ProjectName: 'DemoWorkerService'
+
+steps:
+- task: NuGetToolInstaller@1
+
+- task: NuGetCommand@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: 'restore'
+    restoreSolution: '$(Solution)'    
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build $(BuildConfiguration)'
+  inputs:
+    command: 'build'
+    arguments: '--configuration $(BuildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test $(BuildConfiguration)'
+  inputs:
+    command: test
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration $(BuildConfiguration) --collect "Code coverage"'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish $(ProjectName)'
+  inputs:
+    command: publish
+    publishWebProjects: false
+    arguments: '--configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)\$(WebSiteName) $(ProjectName)\$(ProjectName).csproj'
+    zipAfterPublish: true
+
+- task: PublishBuildArtifacts@1
+  displayName: 'publish artifacts'
